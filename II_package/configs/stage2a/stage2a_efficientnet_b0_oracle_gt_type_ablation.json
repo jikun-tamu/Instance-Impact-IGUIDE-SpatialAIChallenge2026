@@ -1,0 +1,8 @@
+{
+  "labels_csv": "outputs/stage2a/ml_dataset/labels_manifest.csv",
+  "out_dir": "outputs/stage2a/ablations/oracle_gt_type_geometry",
+  "note": "Oracle GT-type upper bound is implemented in scripts/stage2a/training/evaluate_stage2a_baselines.py as oracle_gt_type_geometry; this config records the experiment contract and is not a deployable inference setting.",
+  "seed": 2025,
+  "geometry_cols": "log_footprint_m2,mask_fill_ratio,bbox_aspect_ratio,geometry_compactness,estimated_units_missing,GEOID_missing",
+  "baseline_name": "oracle_gt_type_geometry"
+}

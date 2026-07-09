@@ -1,0 +1,9 @@
+{
+  "mean_brightness": 74.24,
+  "frac_zeros": 0.0003,
+  "spatial_std": 9.27,
+  "reason": "ok",
+  "date": "20250114",
+  "post_image": "/media/data/building_instance_tamu/la_fire_2025/chips/cell_00507/post/cell_00507_post_20250114.tif",
+  "tile_quality_ok": true
+}
