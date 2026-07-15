@@ -1,0 +1,68 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Cao et~al.(2020)Cao, Mirjalili, and Raschka]{cao2020coral}
+Wenzhi Cao, Vahid Mirjalili, and Sebastian Raschka.
+\newblock Rank consistent ordinal regression for neural networks with
+  application to age estimation.
+\newblock \emph{Pattern Recognition Letters}, 140:\penalty0 325--331, 2020.
+\newblock \doi{10.1016/j.patrec.2020.11.008}.
+
+\bibitem[Carion et~al.(2025)Carion, Gustafson, Hu, Debnath, Hu, Suris,
+  et~al.]{carion2025sam3}
+Nicolas Carion, Laura Gustafson, Yuan-Ting Hu, Shoubhik Debnath, Ronghang Hu,
+  Didac Suris, et~al.
+\newblock {SAM 3}: Segment anything with concepts.
+\newblock \emph{arXiv preprint arXiv:2511.16719}, 2025.
+
+\bibitem[Cohen(1968)]{cohen1968weighted}
+Jacob Cohen.
+\newblock Weighted kappa: Nominal scale agreement with provision for scaled
+  disagreement or partial credit.
+\newblock \emph{Psychological Bulletin}, 70\penalty0 (4):\penalty0 213--220,
+  1968.
+\newblock \doi{10.1037/h0026256}.
+
+\bibitem[Guo et~al.(2017)Guo, Pleiss, Sun, and Weinberger]{guo2017calibration}
+Chuan Guo, Geoff Pleiss, Yu~Sun, and Kilian~Q. Weinberger.
+\newblock On calibration of modern neural networks.
+\newblock In \emph{Proceedings of the 34th International Conference on Machine
+  Learning}, volume~70 of \emph{Proceedings of Machine Learning Research},
+  pages 1321--1330, 2017.
+
+\bibitem[Gupta et~al.(2019)Gupta, Goodman, Patel, Hosfelt, Sajeev, Heim, Doshi,
+  Lucas, Choset, and Gaston]{gupta2019xbd}
+Ritwik Gupta, Bryce Goodman, Nirav Patel, Ricky Hosfelt, Sandra Sajeev, Eric
+  Heim, Jigar Doshi, Keane Lucas, Howie Choset, and Matthew Gaston.
+\newblock Creating xbd: A dataset for assessing building damage from satellite
+  imagery.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition Workshops}, pages 10--17, 2019.
+
+\bibitem[Liu et~al.(2022)Liu, Mao, Wu, Feichtenhofer, Darrell, and
+  Xie]{liu2022convnext}
+Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell,
+  and Saining Xie.
+\newblock A convnet for the 2020s.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, pages 11976--11986, 2022.
+
+\bibitem[{U.S. Census Bureau}(2022)]{uscensus2022tiger}
+{U.S. Census Bureau}.
+\newblock 2022 {TIGER/Line} shapefiles technical documentation.
+\newblock
+  \url{https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/tiger-geo-line.2022.html},
+  2022.
+
+\bibitem[{U.S. Census Bureau}(2023)]{uscensus2022acs}
+{U.S. Census Bureau}.
+\newblock 2022 american community survey 5-year data.
+\newblock
+  \url{https://www.census.gov/data/developers/data-sets/acs-5year/2022.html},
+  2023.
+
+\end{thebibliography}

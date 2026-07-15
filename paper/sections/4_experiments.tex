@@ -1,0 +1,275 @@
+\section{Experimental Framework}
+\label{sec:experiments}
+
+\subsection{Study Design and Geographic Evidence}
+\label{sec:exp_scope}
+
+The experiments follow the information pathway from building discovery to multi-date delivery. Each evaluation is tied to the geographic unit and inferential role of its component (Table~\ref{tab:evidence_scope}). Polygon matching measures whether buildings enter the information system; tile-blocked validation evaluates exposure-proxy and damage models without sharing source tiles across partitions; component comparisons isolate the contributions of footprint masks, type probabilities, and neighbourhood context; and the Los Angeles application examines how predictions and unknown states are assembled across repeated observations.
+
+\begin{table*}[h!]
+\centering
+\caption{Geographic domains, evaluation units, and evidential roles.}
+\label{tab:evidence_scope}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}X}
+\toprule
+Component & Domain and unit & Evaluation design & Evidential role \\
+\midrule
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json.
+Building delineation & xView2 multi-disaster test set; 933 images & One-to-one polygon matching at IoU 0.5 & Measures instance discovery and matched geometry \\
+% Evidence: II_package/docs/stage2a.md; packaged Stage2a summaries; M41 split-sensitivity JSON files.
+Type and exposure & Harris County, Hurricane Harvey; 21,428 buildings & Tile-blocked validation, repeated training, ablation, and alternative partitions & Measures proxy reconstruction and geographic/source sensitivity \\
+% Evidence: II_package/docs/Stage2b.md; paired mask_m and mask_m_ring sweeps.
+Ordinal damage & xBD flooding events; 41,582 buildings & Matched tile-blocked context comparisons and repeated training & Measures the contribution of target-neighbourhood context \\
+% Evidence: II_package/la_fire_results/damage_summary.md and II_package/docs/stage3.md.
+Multi-date synthesis & Los Angeles wildfire; 21,797 buildings and five dates & Cross-hazard application without wildfire-specific retraining & Examines explicit unknown states and analyst-facing delivery \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The component evaluations and the application serve different purposes. The xView2 and xBD experiments quantify delineation, proxy reconstruction, and ordinal damage within their respective evaluation domains. The Los Angeles case is a cross-hazard demonstration of information handling: it evaluates whether the instance contract preserves temporal coverage and produces reviewable outputs, rather than estimating wildfire-damage accuracy.
+
+\subsection{Model Training and Validation}
+\label{sec:exp_training}
+
+Training and validation preserve the building instance as the sampling unit while assigning every instance from a source tile to a single partition. Table~\ref{tab:training_protocols} records the settings needed to reproduce the learned Stage~2 branches; the following text describes how these settings preserve the relationship between model fitting and deployment.
+
+\begin{table*}[t]
+\centering
+\caption{Training, selection, and inference protocols for the learned Stage~2 components.}
+\label{tab:training_protocols}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{5.1cm}>{\raggedright\arraybackslash}X}
+\toprule
+Component & Geographic protocol & Fitting objective and optimization & Selection and inference \\
+\midrule
+Stage~2a type & 18,224 training and 3,204 validation buildings; fixed tile-blocked split; five seeds & Weighted cross-entropy; ConvNeXt-Tiny; $224\times224$ inputs; batch 48; AdamW, learning rate $5\times10^{-5}$ and weight decay 0.01; bf16; EMA 0.999; at most 50 epochs & Validation macro-F1 with patience 10; mean of five probability vectors \\
+Stage~2a exposure & Five-fold tile-blocked out-of-fold type predictions for training rows & Standardized ridge baseline ($\alpha=100$) plus absolute-error histogram gradient boosting (350 iterations) on $\log(1+\widetilde p)$ & Validation log MAE; nonnegative inverse-log transform \\
+Stage~2b context comparison & Tile-blocked 15\% validation split; five matched footprint-only and footprint-plus-ring pairs; $256\times256$ crops & Cumulative binary cross-entropy; shared ConvNeXt-Tiny; natural sampling; batch 16; AdamW, learning rate $5\times10^{-5}$ and weight decay 0.10; cosine schedule; bf16; EMA 0.999; at most 20 epochs & Validation macro-F1 with QWK tie-break; within-seed comparison of pooling regions \\
+Stage~2b inference & Three independently fitted footprint-plus-ring models with source-tile blocking & Cumulative binary cross-entropy; mild weighted sampling; batch 16; AdamW, learning rate $5\times10^{-5}$ and weight decay 0.05; cosine schedule; bf16; EMA 0.999; at most 20 epochs & Validation macro-F1 with QWK tie-break; 4:3:2 weighted mean of raw cumulative logits \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\paragraph{Building delineation and asset retention.}
+The delineation evaluation uses 933 xView2 test images and one-to-one matching between predicted and reference polygons at IoU 0.5.
+
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json, counts and metrics.
+% Evidence: II_package/docs/stage1.md, Joplin two-tile sanity run retained as non-rendered interface provenance: 124 delineated instances and 114 shared-asset rows.
+
+\paragraph{Building type and exposure proxy.}
+The 21,428 labelled buildings are grouped by source tile. Five type classifiers are fitted independently on the common training partition with weighted sampling and inverse-square-root class weights. Training augmentation synchronizes horizontal flips and right-angle rotations across each crop and its footprint mask. Exponential moving-average weights are evaluated after each epoch, and the checkpoint with the highest validation macro-F1 is retained.
+
+The exposure regressor is trained only after the type models. Within each type-model seed, five tile-blocked folds generate out-of-fold probabilities for all training buildings. This prevents the exposure regressor from receiving type probabilities produced by a classifier that saw the same building during fitting. The final regressor uses probabilities averaged across the out-of-fold seed families, while validation and inference use the mean of the five full-training classifiers. This protocol aligns the training-time type features with the probability ensemble available at deployment.
+
+% Evidence: II_package/docs/stage2a.md, Dataset And Split, M31--M35, and M41.
+% Evidence: II_package/models/stage2a/native3_drop_both_ensemble/population_logfootprint_soft_type_residual_hgb_summary.json, train_rows=18224 and val_rows=3204.
+
+\paragraph{Ordinal damage.}
+The flood-damage dataset contains 41,582 buildings: 31,225 with no visible damage, 5,134 minor, 4,721 major, and 502 destroyed. Whole image tiles are assigned to training or a 15\% validation partition. Training applies synchronized horizontal flips and right-angle rotations to pre-event crops, post-event crops, and masks. Mild colour jitter is applied independently to the paired RGB observations. The context comparison holds natural sampling and weight decay 0.10 constant across each footprint-only and footprint-plus-ring pair. The operational ensemble instead uses three independently fitted footprint-plus-ring models with mild weighted sampling and weight decay 0.05. In both protocols, checkpoints are selected by validation macro-F1, with QWK resolving ties; post-hoc temperature scaling is fitted on validation predictions for confidence reporting.
+
+% Evidence: II_package/docs/Stage2b.md, Flood prep audit snapshot and five-seed sweep tables.
+% Evidence: II_package/scripts/train_stage2.py, tile split and joint seed behavior.
+
+\paragraph{Multi-date synthesis.}
+The Los Angeles application applies the flood-trained damage model without hazard-specific retraining. Five post-event dates are aggregated with the valid-coverage rule in Section~\ref{sec:method_stage3}. We report the resulting class and unknown-state counts, spatial coverage, and the review fields exposed at the building level.
+
+% Evidence: II_package/la_fire_results/damage_summary.md, Dataset Overview and M2b Damage Distribution.
+
+\subsection{Component Comparisons and Sensitivity Analysis}
+\label{sec:exp_comparisons}
+
+Stage~2a comparisons test the information carried by the footprint mask, geometric vector, imbalance controls, and soft type probabilities. Type-input ablations hold the common split and training seed fixed. The population comparison removes soft type information while retaining the same ridge-plus-residual architecture, thereby isolating the type contribution. Two alternative tile-blocked partitions assess geographic sensitivity, while source- and class-stratified metrics assess dependence on target construction. Probability scaling is evaluated both for type calibration and for its downstream effect on exposure reconstruction.
+
+Stage~2b comparisons isolate neighbourhood context using five matched footprint-only and footprint-plus-ring pairs. Each pair shares its tile partition and training seed and uses natural sampling, so the within-pair difference reflects the pooling region rather than sampling policy. Separate five-seed comparisons assess mild weighted sampling. Calibration is evaluated after model fitting and does not redefine the cumulative ordinal target or the class-selection rule.
+
+% Evidence: II_package/docs/stage2a.md, M31--M35 and M41 comparison protocols.
+% Evidence: II_package/docs/Stage2b.md, matched natural-sampling pairs, weighted-sampling aggregate, and calibration protocol.
+
+\subsection{Evaluation Measures}
+\label{sec:exp_metrics}
+
+Building delineation is measured by precision, recall, and F1 after IoU-0.5 matching; mean IoU is calculated over matched pairs. Building-type evaluation uses macro-F1, accuracy, and expected calibration error (ECE) \citep{guo2017calibration}. Exposure error is the mean absolute difference in $\log(1+p)$, and the factor-two rate is the fraction satisfying
+
+\begin{equation}
+\left|\log(1+\widehat{p})-\log(1+\widetilde{p})\right| \leq \log 2.
+\label{eq:factor_two}
+\end{equation}
+
+Raw mean absolute error is also reported in proxy-occupancy units. Ordinal damage is evaluated by macro-F1, quadratic weighted kappa (QWK) \citep{cohen1968weighted}, ECE, and negative log-likelihood (NLL). All exposure metrics quantify reconstruction of $\widetilde{p}$ as defined in Section~\ref{sec:method_stage2a_data}.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Building Delineation Establishes the Observable Population}
+\label{sec:exp_stage1}
+
+Building discovery, rather than boundary fit among detections, was the principal coverage constraint. Across 933 xView2 images, the evaluation contained 54,862 reference buildings and 22,824 predictions. At IoU 0.5, 15,567 predictions were matched, yielding 0.6820 precision, 0.2837 recall, and 0.4008 F1 (Table~\ref{tab:stage1_results}). The mean IoU of 0.7589 among matched pairs indicates that detected instances were generally well localized, but the low recall restricts which buildings can receive later exposure and damage attributes.
+
+\begin{table}[h!]
+\centering
+\caption{Building-instance delineation on the xView2 test set.}
+\label{tab:stage1_results}
+\small
+\begin{tabular}{lr}
+\toprule
+Metric & Value \\
+\midrule
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json::precision.
+Precision & 0.6820 \\
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json::recall.
+Recall & 0.2837 \\
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json::f1.
+F1 & 0.4008 \\
+% Evidence: II_package/la_fire_results/xview2_eval/eval_test.json::mean_iou_matched.
+Mean IoU, matched pairs & 0.7589 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Evidence: the non-rendered Joplin interface check recorded 46 and 78 detections, 114 shared rows, and 91.9% retention (114 / 124); ten records were bad_wkt MULTIPOLYGON cases.
+
+\subsection{Building Type Supports Exposure-Proxy Reconstruction}
+\label{sec:exp_stage2a}
+
+The type and exposure models were stable across five trainings on the common tile-blocked partition. Mean type macro-F1 was $0.8529\pm0.0106$, while exposure log MAE was $0.0760\pm0.0032$ and the factor-two rate was $0.9603\pm0.0034$ (Table~\ref{tab:stage2a_main}). Averaging type probabilities increased macro-F1 to 0.857898 and reduced exposure log MAE to 0.073351. The ensemble therefore improved both the intermediate type representation and reconstruction of the rule-derived exposure target.
+
+\begin{table*}[t]
+\centering
+\caption{Building-type and exposure-proxy results on the common tile-blocked partition. Raw MAE is in proxy-occupancy units.}
+\label{tab:stage2a_main}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model summary & Type macro-F1 & Accuracy & ECE & Log MAE & Factor-two & Raw MAE \\
+\midrule
+% Evidence: II_package/docs/stage2a.md, M31 type stability and M32 population stability.
+Five-run stability & $0.8529\!\pm\!0.0106$ & $0.9300\!\pm\!0.0035$ & $0.0542\!\pm\!0.0042$ & $0.0760\!\pm\!0.0032$ & $0.9603\!\pm\!0.0034$ & $14.76\!\pm\!0.91$ \\
+% Evidence: II_package/models/stage2a/native3_drop_both_ensemble/population_logfootprint_soft_type_residual_hgb_summary.json::validation.
+Probability ensemble & 0.857898 & 0.933208 & 0.034243 & 0.073351 & 0.960674 & 14.3529 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Soft type information accounted for most of the regressor's measured gain. With the residual model held fixed, removing predicted type increased log MAE from 0.0742 to 0.1157; a direct gradient-boosting model without type reached 0.1175. In the type-model ablation, RGB alone produced 0.8048 macro-F1, adding the footprint mask raised it to 0.8626, adding geometric attributes produced 0.8601, and removing imbalance handling reduced it to 0.8262. The footprint mask and imbalance treatment therefore contributed more than the additional geometry vector in this comparison.
+
+% Evidence: II_package/docs/stage2a.md, M34 type ablation and M35 population ablation.
+
+\subsection{Exposure Error Reflects Target Source and Spatial Partition}
+\label{sec:exp_stage2a_sensitivity}
+
+Aggregate exposure accuracy concealed marked source and class differences. Log MAE was 0.027934 for area-rule labels and 0.402013 for parcel-code labels, a 14.4-fold difference (Table~\ref{tab:stage2a_subgroups}). Commercial buildings, which dominate the validation data, had substantially lower error than either residential class. These results connect model behavior to how the proxy was geographically constructed, rather than treating the aggregate error as uniform across buildings.
+
+\begin{table}[t]
+\centering
+\caption{Exposure-proxy error by label-construction source and building type.}
+\label{tab:stage2a_subgroups}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Slice & $n$ & Log MAE & Factor-two \\
+\midrule
+% Evidence: packaged Stage2a population summary::validation.population_by_classification_source.area_heuristic.
+Area rule & 2,815 & 0.027934 & 0.987922 \\
+% Evidence: packaged Stage2a population summary::validation.population_by_classification_source.parcel_code.
+Parcel code & 389 & 0.402013 & 0.763496 \\
+% Evidence: packaged Stage2a population summary::validation.population_by_type.commercial.
+Commercial & 2,626 & 0.029157 & 0.984768 \\
+% Evidence: packaged Stage2a population summary::validation.population_by_type.residential_multi.
+Residential multi & 513 & 0.276811 & 0.847953 \\
+% Evidence: packaged Stage2a population summary::validation.population_by_type.residential_small.
+Residential small & 65 & 0.253009 & 0.876923 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Performance also varied with the geographic partition. Across the reference and two alternative tile assignments, type macro-F1 ranged from 0.842816 to 0.890720 and exposure log MAE from 0.061295 to 0.104110 (Table~\ref{tab:stage2a_splits}). Reporting this variation alongside source-stratified error identifies where the proxy is reproduced reliably and where interpretation should be more cautious.
+
+\begin{table}[t]
+\centering
+\caption{Sensitivity to tile-blocked training and validation partitions.}
+\label{tab:stage2a_splits}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Partition & Type macro-F1 & Log MAE & Factor-two \\
+\midrule
+% Evidence: packaged Stage2a population summary::validation; internal evidence ID M33.
+Reference & 0.857898 & 0.073351 & 0.960674 \\
+% Evidence: M41 alt1_split3001 population summary::validation.
+Alternative A & 0.842816 & 0.104110 & 0.944844 \\
+% Evidence: M41 alt2_split3002 population summary::validation.
+Alternative B & 0.890720 & 0.061295 & 0.972550 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Probability scaling further illustrates the coupling between pipeline components. Temperature and classwise scaling reduced type ECE from 0.03424 to 0.00972 and 0.00644, respectively, but increased downstream exposure log MAE from 0.07335 to 0.08267 and 0.08159. Raw ensemble probabilities were therefore retained for exposure estimation: better standalone calibration did not improve the quantity ultimately delivered by this branch.
+
+% Evidence: M41 native3_calibration_summary.json::raw_m33_ensemble, type_ece=0.03424 and population_log_mae=0.07335.
+% Evidence: same summary::temperature, type_ece=0.00972 and population_log_mae=0.08267.
+% Evidence: same summary::vector_classwise, type_ece=0.00644 and population_log_mae=0.08159.
+
+\subsection{Neighbourhood Context Improves Ordinal Damage Estimation}
+\label{sec:exp_stage2b}
+
+Adding the context ring improved macro-F1 in every matched comparison (Table~\ref{tab:stage2b_pairs}). Across five joint partition/training seeds, mean macro-F1 increased from $0.6358\pm0.0299$ to $0.6781\pm0.0262$, and mean QWK increased from $0.7138\pm0.0291$ to $0.8309\pm0.0215$. The paired macro-F1 gain was $0.0423\pm0.0107$. The repeated increase shows that neighbourhood change contributed information beyond the target footprint alone.
+
+\begin{table*}[t]
+\centering
+\caption{Matched comparisons of footprint-only ($M$) and footprint-plus-ring ($M+R$) pooling under natural sampling.}
+\label{tab:stage2b_pairs}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{rrrrrrr}
+\toprule
+Seed & $M$ F1 & $M$ QWK & $M$ ECE & $M+R$ F1 & $M+R$ QWK & $M+R$ ECE \\
+\midrule
+% Evidence: II_package/docs/Stage2b.md, matched sweep, seed 42.
+42 & 0.6064 & 0.6936 & 0.0961 & 0.6633 & 0.8203 & 0.0376 \\
+% Evidence: II_package/docs/Stage2b.md, matched sweep, seed 123.
+123 & 0.6198 & 0.7261 & 0.0601 & 0.6695 & 0.8466 & 0.0425 \\
+% Evidence: II_package/docs/Stage2b.md, matched sweep, seed 3407.
+3407 & 0.6179 & 0.6894 & 0.0613 & 0.6487 & 0.8048 & 0.0403 \\
+% Evidence: II_package/docs/Stage2b.md, matched sweep, seed 2025.
+2025 & 0.6759 & 0.7007 & 0.0521 & 0.7144 & 0.8242 & 0.0628 \\
+% Evidence: II_package/docs/Stage2b.md, matched sweep, seed 7777.
+7777 & 0.6588 & 0.7592 & 0.0623 & 0.6944 & 0.8584 & 0.0340 \\
+\midrule
+% Evidence: sample mean and sample standard deviation recomputed from the five rows.
+Mean $\pm$ sd & $0.6358\!\pm\!0.0299$ & $0.7138\!\pm\!0.0291$ & $0.0664\!\pm\!0.0171$ & $0.6781\!\pm\!0.0262$ & $0.8309\!\pm\!0.0215$ & $0.0434\!\pm\!0.0113$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The matched architecture comparison used natural sampling to isolate the context effect. In separate five-seed fits of the context model, mild weighted sampling increased mean macro-F1 from 0.6781 to 0.6868, while mean QWK decreased from 0.8309 to 0.8264 and ECE increased from 0.0434 to 0.0621. For the selected anchor checkpoint, temperature scaling reduced ECE from 0.057250 to 0.035605 without changing ordinal classes. Calibrated probabilities were therefore used for confidence indicators, while raw cumulative logits determined the damage class.
+
+% Evidence: II_package/docs/Stage2b.md, weighted-sampler five-seed aggregate.
+% Evidence: II_package/docs/Stage2b.md, fixed-configuration aggregate: macro-F1 0.6809 +/- 0.0199.
+% Evidence: II_package/docs/Stage2b.md, 27 completed search runs; II_package/models/stage2b/inference0.7273.pt, macro-F1 0.727284.
+% Evidence: II_package/calibration/calibration_run019_r48/calibration_metrics.json::raw, NLL 0.547147 and ECE 0.057250.
+% Evidence: same calibration JSON::temperature, NLL 0.488033 and ECE 0.035605.
+% Evidence: same calibration JSON::vector_exponents, NLL 0.419985, ECE 0.025932, and 99 argmax changes; recomputed macro-F1 0.720657.
+
+\subsection{Coverage-Aware Synthesis Preserves Unknown States}
+\label{sec:exp_stage3}
+
+The Los Angeles application translated repeated predictions into building-level records without converting absent imagery into apparent no damage. The five-date summary contained 21,797 delineated buildings across 120 of 295 spatial cells. Coverage-aware voting assigned 1,245 buildings to the explicit not-identifiable class, alongside 16,246 no-visible-damage, 4,174 minor, 39 major, and 93 destroyed predictions. Thus 5.7\% of mapped buildings remained visibly outside the model's valid observational support instead of entering the lowest damage class.
+
+% Evidence: II_package/la_fire_results/damage_summary.md, 21,797 instances, 120/295 cells, five dates, and class counts.
+% Evidence: 1,245 / 21,797 = 0.05711795.
+% Evidence: The archived Los Angeles release records the damage-aggregation slice rather than a co-located all-stage driver bundle.
+% Evidence: II_package/la_fire_results/sample_buildings.csv has 2,067 rows, four dates per row, and unpopulated Stage2a fields; retained outside the rendered narrative as artifact provenance.
+
+The synthesis table carries valid-date counts, class probabilities, uncertainty indicators, and source references alongside each damage estimate. Analysts can therefore select severe buildings, inspect cases with high uncertainty indicators, or separate unobserved buildings before allocating attention. Figure~\ref{fig:instance_evidence_outputs} connects these fields back to imagery and footprint geometry, from an individual building to the regional synthesis. The practical contribution is this traceable transition from separate GeoAI outputs to reviewable instance records: coverage, proxy exposure, ordinal damage, and uncertainty indicators remain distinct attributes rather than being hidden inside one composite prediction.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{instance_evidence_to_regional_output.pdf}
+\caption{Building-level evidence and coverage-aware spatial delivery. (a) A representative Harris County validation record shows the Stage~2a type prediction, constructed exposure proxy, and model estimate in proxy-occupancy units; this panel is from a separate study area from the Los Angeles application. (b) A persistent Los Angeles building is linked across pre- and post-event imagery and retains its coverage-aware multi-date (M2b) damage record. (c) M2b outputs for the surrounding 600-m cell. (d) M2b synthesis for the eastern Los Angeles study area, with not-identifiable buildings retained separately from no visible damage. The flood-trained damage model was applied without wildfire-specific retraining, so panels (b)--(d) demonstrate traceable spatial delivery and coverage handling rather than validated wildfire-damage accuracy.}
+\label{fig:instance_evidence_outputs}
+\end{figure*}
+\FloatBarrier

@@ -1,0 +1,114 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Methodology}{1}{section.1}\protected@file@percent }
+\newlabel{sec:method}{{1}{1}{Methodology}{section.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Problem Formulation and Design Objectives}{1}{subsection.1.1}\protected@file@percent }
+\newlabel{sec:method_design}{{1.1}{1}{Problem Formulation and Design Objectives}{subsection.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Instance-Centric GeoAI Framework}{1}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:method_framework}{{1.2}{1}{Instance-Centric GeoAI Framework}{subsection.1.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Conceptual organization of Instance Impact. The upper band associates the four stages with their model outputs, while the lower band follows persistent building instances through the parallel Stage\nobreakspace  {}2a exposure-proxy and Stage\nobreakspace  {}2b damage branches to Stage\nobreakspace  {}3 synthesis. Population and occupancy wording in the schematic denotes a constructed exposure proxy rather than observed occupants; the final product is a building-level evidence record rather than a calibrated impact score.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:instance_impact_conceptualization}{{1}{2}{Conceptual organization of Instance Impact. The upper band associates the four stages with their model outputs, while the lower band follows persistent building instances through the parallel Stage~2a exposure-proxy and Stage~2b damage branches to Stage~3 synthesis. Population and occupancy wording in the schematic denotes a constructed exposure proxy rather than observed occupants; the final product is a building-level evidence record rather than a calibrated impact score}{figure.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Decision-facing semantics of the building-instance contract.}}{2}{table.1}\protected@file@percent }
+\newlabel{tab:decision_semantics}{{1}{2}{Decision-facing semantics of the building-instance contract}{table.1}{}}
+\citation{gupta2019xbd}
+\citation{uscensus2022tiger}
+\citation{uscensus2022acs}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Workflow used to construct the building-level exposure-proxy target. Parcel records provide building-type and unit heuristics; xBD footprints supply building geometry; and CBG boundaries link each building to ACS occupancy and people-per-unit attributes. Their building-level combination produces the Stage\nobreakspace  {}2a training target, which is treated throughout this paper as a constructed exposure proxy rather than an observed count of occupants.}}{3}{figure.2}\protected@file@percent }
+\newlabel{fig:building_population_proxy_rule}{{2}{3}{Workflow used to construct the building-level exposure-proxy target. Parcel records provide building-type and unit heuristics; xBD footprints supply building geometry; and CBG boundaries link each building to ACS occupancy and people-per-unit attributes. Their building-level combination produces the Stage~2a training target, which is treated throughout this paper as a constructed exposure proxy rather than an observed count of occupants}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Stage 2a: Exposure-Proxy Data and Target Construction}{3}{subsection.1.3}\protected@file@percent }
+\newlabel{sec:method_stage2a_data}{{1.3}{3}{Stage 2a: Exposure-Proxy Data and Target Construction}{subsection.1.3}{}}
+\citation{carion2025sam3}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Building-type distribution before target-category selection.}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:stage2a_classes}{{2}{4}{Building-type distribution before target-category selection}{table.2}{}}
+\newlabel{eq:units}{{1}{4}{Stage 2a: Exposure-Proxy Data and Target Construction}{equation.1.1}{}}
+\newlabel{eq:res_population}{{2}{4}{Stage 2a: Exposure-Proxy Data and Target Construction}{equation.1.2}{}}
+\newlabel{eq:nonres_population}{{3}{4}{Stage 2a: Exposure-Proxy Data and Target Construction}{equation.1.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Stage 1: Building-Instance Delineation and Asset Generation}{4}{subsection.1.4}\protected@file@percent }
+\newlabel{sec:method_stage1}{{1.4}{4}{Stage 1: Building-Instance Delineation and Asset Generation}{subsection.1.4}{}}
+\citation{liu2022convnext}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Illustrative Stage\nobreakspace  {}1 building-instance delineation for Los Angeles cell 00507. (a) Pre-event imagery used to define persistent building geometry. (b) In-frame boundaries from the current packaged Stage\nobreakspace  {}1 output, with an enlarged view of individual instances. This application example shows the spatial interface passed downstream; it is not part of the xView2 benchmark used to compute the delineation metrics in Section\nobreakspace  {}\ref {sec:exp_stage1}.}}{5}{figure.3}\protected@file@percent }
+\newlabel{fig:stage1_instance_illustration}{{3}{5}{Illustrative Stage~1 building-instance delineation for Los Angeles cell 00507. (a) Pre-event imagery used to define persistent building geometry. (b) In-frame boundaries from the current packaged Stage~1 output, with an enlarged view of individual instances. This application example shows the spatial interface passed downstream; it is not part of the xView2 benchmark used to compute the delineation metrics in Section~\ref {sec:exp_stage1}}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}Stage 2a: Building-Type and Exposure-Proxy Estimation}{5}{subsection.1.5}\protected@file@percent }
+\newlabel{sec:method_stage2a_model}{{1.5}{5}{Stage 2a: Building-Type and Exposure-Proxy Estimation}{subsection.1.5}{}}
+\newlabel{eq:stage2a_mask_pool}{{4}{5}{Stage 2a: Building-Type and Exposure-Proxy Estimation}{equation.1.4}{}}
+\citation{cao2020coral}
+\newlabel{eq:stage2a_type_ensemble}{{5}{6}{Stage 2a: Building-Type and Exposure-Proxy Estimation}{equation.1.5}{}}
+\newlabel{eq:stage2a_exposure_model}{{6}{6}{Stage 2a: Building-Type and Exposure-Proxy Estimation}{equation.1.6}{}}
+\newlabel{eq:footprint_fallback}{{7}{6}{Stage 2a: Building-Type and Exposure-Proxy Estimation}{equation.1.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.6}Stage 2b: Ordinal Building-Damage Estimation}{6}{subsection.1.6}\protected@file@percent }
+\newlabel{sec:method_stage2b}{{1.6}{6}{Stage 2b: Ordinal Building-Damage Estimation}{subsection.1.6}{}}
+\newlabel{eq:stage2b_fusion}{{8}{6}{Stage 2b: Ordinal Building-Damage Estimation}{equation.1.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.7}Stage 3: Coverage-Aware Multi-Date Synthesis}{6}{subsection.1.7}\protected@file@percent }
+\newlabel{sec:method_stage3}{{1.7}{6}{Stage 3: Coverage-Aware Multi-Date Synthesis}{subsection.1.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Architectures of the two learned Stage\nobreakspace  {}2 branches. (a) Stage\nobreakspace  {}2a combines mask-aware pre-event image features with deployable geometry to estimate three building-type probabilities. Their five-model mean informs a separately fitted ridge-plus-residual exposure model. (b) Stage\nobreakspace  {}2b applies a weight-shared backbone to paired observations, pools footprint and context features, and combines state and change evidence in a cumulative ordinal head.}}{7}{figure.4}\protected@file@percent }
+\newlabel{fig:stage2_architecture}{{4}{7}{Architectures of the two learned Stage~2 branches. (a) Stage~2a combines mask-aware pre-event image features with deployable geometry to estimate three building-type probabilities. Their five-model mean informs a separately fitted ridge-plus-residual exposure model. (b) Stage~2b applies a weight-shared backbone to paired observations, pools footprint and context features, and combines state and change evidence in a cumulative ordinal head}{figure.4}{}}
+\newlabel{eq:ranking_score}{{9}{7}{Stage 3: Coverage-Aware Multi-Date Synthesis}{equation.1.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Experimental Framework}{7}{section.2}\protected@file@percent }
+\newlabel{sec:experiments}{{2}{7}{Experimental Framework}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Study Design and Geographic Evidence}{7}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:exp_scope}{{2.1}{7}{Study Design and Geographic Evidence}{subsection.2.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Geographic domains, evaluation units, and evidential roles.}}{8}{table.3}\protected@file@percent }
+\newlabel{tab:evidence_scope}{{3}{8}{Geographic domains, evaluation units, and evidential roles}{table.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Model Training and Validation}{8}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:exp_training}{{2.2}{8}{Model Training and Validation}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Building delineation and asset retention.}{8}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Building type and exposure proxy.}{8}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ordinal damage.}{8}{section*.3}\protected@file@percent }
+\citation{guo2017calibration}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Training, selection, and inference protocols for the learned Stage\nobreakspace  {}2 components.}}{9}{table.4}\protected@file@percent }
+\newlabel{tab:training_protocols}{{4}{9}{Training, selection, and inference protocols for the learned Stage~2 components}{table.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Multi-date synthesis.}{9}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Component Comparisons and Sensitivity Analysis}{9}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:exp_comparisons}{{2.3}{9}{Component Comparisons and Sensitivity Analysis}{subsection.2.3}{}}
+\citation{cohen1968weighted}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Evaluation Measures}{10}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:exp_metrics}{{2.4}{10}{Evaluation Measures}{subsection.2.4}{}}
+\newlabel{eq:factor_two}{{10}{10}{Evaluation Measures}{equation.2.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Results}{10}{section.3}\protected@file@percent }
+\newlabel{sec:results}{{3}{10}{Results}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Building Delineation Establishes the Observable Population}{10}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:exp_stage1}{{3.1}{10}{Building Delineation Establishes the Observable Population}{subsection.3.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Building-instance delineation on the xView2 test set.}}{10}{table.5}\protected@file@percent }
+\newlabel{tab:stage1_results}{{5}{10}{Building-instance delineation on the xView2 test set}{table.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Building Type Supports Exposure-Proxy Reconstruction}{10}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:exp_stage2a}{{3.2}{10}{Building Type Supports Exposure-Proxy Reconstruction}{subsection.3.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Building-type and exposure-proxy results on the common tile-blocked partition. Raw MAE is in proxy-occupancy units.}}{11}{table.6}\protected@file@percent }
+\newlabel{tab:stage2a_main}{{6}{11}{Building-type and exposure-proxy results on the common tile-blocked partition. Raw MAE is in proxy-occupancy units}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Exposure-proxy error by label-construction source and building type.}}{11}{table.7}\protected@file@percent }
+\newlabel{tab:stage2a_subgroups}{{7}{11}{Exposure-proxy error by label-construction source and building type}{table.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Exposure Error Reflects Target Source and Spatial Partition}{11}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:exp_stage2a_sensitivity}{{3.3}{11}{Exposure Error Reflects Target Source and Spatial Partition}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Neighbourhood Context Improves Ordinal Damage Estimation}{11}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:exp_stage2b}{{3.4}{11}{Neighbourhood Context Improves Ordinal Damage Estimation}{subsection.3.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Sensitivity to tile-blocked training and validation partitions.}}{12}{table.8}\protected@file@percent }
+\newlabel{tab:stage2a_splits}{{8}{12}{Sensitivity to tile-blocked training and validation partitions}{table.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Matched comparisons of footprint-only ($M$) and footprint-plus-ring ($M+R$) pooling under natural sampling.}}{12}{table.9}\protected@file@percent }
+\newlabel{tab:stage2b_pairs}{{9}{12}{Matched comparisons of footprint-only ($M$) and footprint-plus-ring ($M+R$) pooling under natural sampling}{table.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Coverage-Aware Synthesis Preserves Unknown States}{12}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:exp_stage3}{{3.5}{12}{Coverage-Aware Synthesis Preserves Unknown States}{subsection.3.5}{}}
+\bibstyle{plainnat}
+\bibdata{paper/references}
+\bibcite{cao2020coral}{{1}{2020}{{Cao et~al.}}{{Cao, Mirjalili, and Raschka}}}
+\bibcite{carion2025sam3}{{2}{2025}{{Carion et~al.}}{{Carion, Gustafson, Hu, Debnath, Hu, Suris, et~al.}}}
+\bibcite{cohen1968weighted}{{3}{1968}{{Cohen}}{{}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Building-level evidence and coverage-aware spatial delivery. (a) A representative Harris County validation record shows the Stage\nobreakspace  {}2a type prediction, constructed exposure proxy, and model estimate in proxy-occupancy units; this panel is from a separate study area from the Los Angeles application. (b) A persistent Los Angeles building is linked across pre- and post-event imagery and retains its coverage-aware multi-date (M2b) damage record. (c) M2b outputs for the surrounding 600-m cell. (d) M2b synthesis for the eastern Los Angeles study area, with not-identifiable buildings retained separately from no visible damage. The flood-trained damage model was applied without wildfire-specific retraining, so panels (b)--(d) demonstrate traceable spatial delivery and coverage handling rather than validated wildfire-damage accuracy.}}{13}{figure.5}\protected@file@percent }
+\newlabel{fig:instance_evidence_outputs}{{5}{13}{Building-level evidence and coverage-aware spatial delivery. (a) A representative Harris County validation record shows the Stage~2a type prediction, constructed exposure proxy, and model estimate in proxy-occupancy units; this panel is from a separate study area from the Los Angeles application. (b) A persistent Los Angeles building is linked across pre- and post-event imagery and retains its coverage-aware multi-date (M2b) damage record. (c) M2b outputs for the surrounding 600-m cell. (d) M2b synthesis for the eastern Los Angeles study area, with not-identifiable buildings retained separately from no visible damage. The flood-trained damage model was applied without wildfire-specific retraining, so panels (b)--(d) demonstrate traceable spatial delivery and coverage handling rather than validated wildfire-damage accuracy}{figure.5}{}}
+\bibcite{guo2017calibration}{{4}{2017}{{Guo et~al.}}{{Guo, Pleiss, Sun, and Weinberger}}}
+\bibcite{gupta2019xbd}{{5}{2019}{{Gupta et~al.}}{{Gupta, Goodman, Patel, Hosfelt, Sajeev, Heim, Doshi, Lucas, Choset, and Gaston}}}
+\bibcite{liu2022convnext}{{6}{2022}{{Liu et~al.}}{{Liu, Mao, Wu, Feichtenhofer, Darrell, and Xie}}}
+\bibcite{uscensus2022tiger}{{7}{2022}{{U.S. Census Bureau}}{{}}}
+\bibcite{uscensus2022acs}{{8}{2023}{{U.S. Census Bureau}}{{}}}
+\gdef \@abspage@last{14}

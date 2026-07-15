@@ -1,0 +1,233 @@
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Problem Formulation and Design Objectives}
+\label{sec:method_design}
+
+Given pre-event imagery $I^{\mathrm{pre}}$ and one or more post-event observations $I_t^{\mathrm{post}}$, we seek a set of persistent building records rather than independent image-level predictions. For building $i$, the desired record links its geometry $g_i$ to a building-type distribution $\widehat{\boldsymbol{\tau}}_i$, an exposure proxy $\widehat{p}_i$, date-specific ordinal damage estimates $\widehat{y}_{i,t}$, and fields describing observation coverage and indicators of predictive uncertainty. This formulation makes the mapped building, rather than the image tile, the unit through which evidence is accumulated and delivered.
+
+The formulation serves three design objectives. First, spatial identity must persist across delineation, image extraction, model inference, temporal aggregation, and presentation. Second, the semantics of each estimate must remain explicit: the exposure value is a constructed proxy, ordinal damage is a model inference, and an absent observation is not a negative finding. Third, intermediate coverage and uncertainty indicators must survive synthesis so that decision makers can distinguish mapped evidence from missing or ambiguous evidence. The objective is therefore not a single impact score, but an inspectable geographic record that can support filtering, prioritization, and visual review.
+
+\subsection{Instance-Centric GeoAI Framework}
+\label{sec:method_framework}
+
+The framework connects four named stages through a shared building-instance contract (Figure~\ref{fig:instance_impact_conceptualization}). Stage~1, \emph{Building-Instance Delineation and Asset Generation}, extracts candidate geometries from pre-event imagery and creates aligned crops, masks, and metadata. Stage~2a, \emph{Building-Type and Exposure-Proxy Estimation}, and Stage~2b, \emph{Ordinal Building-Damage Estimation}, operate as parallel inference branches over those shared assets. Stage~3, \emph{Coverage-Aware Multi-Date Synthesis}, then combines the available outputs across models and dates. Each stage can be revised independently because its inputs and outputs refer to the same geographic object.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{II-Conceptualization-v4.png}
+\caption{Conceptual organization of Instance Impact. The upper band associates the four stages with their model outputs, while the lower band follows persistent building instances through the parallel Stage~2a exposure-proxy and Stage~2b damage branches to Stage~3 synthesis. Population and occupancy wording in the schematic denotes a constructed exposure proxy rather than observed occupants; the final product is a building-level evidence record rather than a calibrated impact score.}
+\label{fig:instance_impact_conceptualization}
+\end{figure*}
+
+% Visual references: II_package/II-Conceptualization.png and II_package/final_present_instance.ipynb.
+
+% Evidence: II_package/docs/stage1.md, output schema; II_package/docs/stage3.md, Shared Instance Contract.
+% Evidence: Stage1/shared assets/Stage2b use bldg_uid; the Stage2a adapter maps building_uid explicitly.
+A canonical identifier is propagated with the geometry and source-tile metadata. Input adapters normalize module-specific field names before inference, and synthesis forms the union of identifiers rather than an inner join. Stage-presence flags consequently distinguish a missing prediction from a negative prediction. The same contract also retains confidence, uncertainty indicators such as entropy and between-model disagreement, source paths, and valid-observation counts. Table~\ref{tab:decision_semantics} summarizes how these fields change the interpretation of the final information product.
+
+\begin{table*}[t]
+\centering
+\caption{Decision-facing semantics of the building-instance contract.}
+\label{tab:decision_semantics}
+\small
+\begin{tabularx}{\textwidth}{p{3.1cm}p{4.6cm}X}
+\toprule
+Information element & Encoded distinction & Decision-facing use \\
+\midrule
+Persistent identifier & Same building across crops, models, and dates & Prevents cross-stage record ambiguity \\
+Stage-presence flags & Missing prediction versus negative prediction & Makes model coverage filterable and countable \\
+Target lineage & Constructed exposure versus observed population & Bounds interpretation of the exposure estimate \\
+Validation-source field & Parcel code versus area heuristic in labelled data & Supports source-stratified evaluation \\
+Damage class $-1$ & Not identifiable versus no visible damage & Prevents invalid imagery from implying safety \\
+Entropy and disagreement & Lower versus higher uncertainty indicators & Directs ambiguous instances to visual review \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+Because the exposure variable is constructed rather than directly observed, we define its data lineage before returning to the operational order from Stage~1 through Stage~3.
+
+\FloatBarrier
+\subsection{Stage 2a: Exposure-Proxy Data and Target Construction}
+\label{sec:method_stage2a_data}
+
+The exposure-training data combine xBD Hurricane Harvey pre-disaster imagery and building polygons \citep{gupta2019xbd}, Harris County parcel land-use records, 2022 TIGER/Line Census Block Group (CBG) boundaries \citep{uscensus2022tiger}, and 2018--2022 American Community Survey five-year estimates \citep{uscensus2022acs} (Figure~\ref{fig:building_population_proxy_rule}). The xBD labels provide pixel- and geographic-coordinate polygons and image ground-sample distance. We compute each footprint area from its pixel polygon and squared ground-sample distance, and use its geographic centroid for the demographic and parcel joins.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{building_population_proxy_rule.png}
+\caption{Workflow used to construct the building-level exposure-proxy target. Parcel records provide building-type and unit heuristics; xBD footprints supply building geometry; and CBG boundaries link each building to ACS occupancy and people-per-unit attributes. Their building-level combination produces the Stage~2a training target, which is treated throughout this paper as a constructed exposure proxy rather than an observed count of occupants.}
+\label{fig:building_population_proxy_rule}
+\end{figure*}
+
+% Visual reference: the supplied building-population proxy rule diagram; current semantics verified against the archived target-construction pipeline.
+
+% Evidence: stage2a_old_training_data_codes/building_population_pipeline.ipynb, crop_building_image and make_binary_mask.
+Each polygon is expanded by a $20\,\mathrm{m}$ buffer, clipped to its $1024\times1024$ source tile, and saved as an RGB crop with a binary footprint mask. CBG and parcel layers are reprojected to WGS84 before point-in-polygon joins. Duplicate spatial matches are reduced to one row per building. The resulting label table contains 23,014 buildings from 300 image tiles, of which 21,140 have a CBG identifier. Parcel codes provide 4,554 building-type assignments, while 18,460 are obtained from footprint-area rules.
+
+% Evidence: stage2a_old_training_data_codes/Harris_CBG_Building_Population.zip::ml_dataset/labels.csv and ZIP member listing.
+% Evidence: archived labels.csv has 23,014 unique building_uid, crop_path, and mask_path values across 300 tile_base values.
+Parcel assignments are accepted only when their reported use is plausible for the footprint size; otherwise the area rule is used. Single-family and mobile-home buildings are assigned one unit, duplexes two, and triplexes three. For multi-family buildings with footprint area $a_i$, the unit estimate is capped at 40:
+
+\begin{equation}
+u_i =
+\begin{cases}
+\min\{40,\max(1,\lfloor a_i/90\rfloor)\}, & a_i < 2{,}000\,\mathrm{m}^2,\\
+\min\{40,\max(1,\lfloor a_i/80\rfloor)\}, & a_i \geq 2{,}000\,\mathrm{m}^2.
+\end{cases}
+\label{eq:units}
+\end{equation}
+
+Detailed parcel and area-rule types initially yield five model classes (Table~\ref{tab:stage2a_classes}). Institutional combines educational, religious, charitable, exempt, and miscellaneous uses, while other combines industrial, agricultural, oil and gas, utility, vacant, and unknown uses. These two categories therefore mix buildings with incompatible occupancy processes. We exclude the 632 institutional and 954 other instances before splitting or fitting. The training dataset consequently contains 21,428 instances across commercial, residential multi, and residential small buildings. This exclusion is a limitation: the training domain does not represent institutional and other buildings.
+
+\begin{table}[t]
+\centering
+\caption{Building-type distribution before target-category selection.}
+\label{tab:stage2a_classes}
+\small
+\begin{tabular}{lr}
+\toprule
+Class & Buildings \\
+\midrule
+% Evidence: archived labels.csv type_class_name counts.
+Commercial & 17,392 \\
+% Evidence: archived labels.csv type_class_name counts.
+Residential multi & 3,687 \\
+% Evidence: archived labels.csv type_class_name counts.
+Other & 954 \\
+% Evidence: archived labels.csv type_class_name counts.
+Institutional & 632 \\
+% Evidence: archived labels.csv type_class_name counts.
+Residential small & 349 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Evidence: stage2a_old_training_data_codes/building_population_pipeline.ipynb, LAND_USE_MAPPING, ML_CLASS_MAPPING, DEFAULT_PPU, DEFAULT_OCCUPANCY, POPULATION_CAPS, and NON_RES_DENSITY.
+For residential building $i$ in CBG $g$, the exposure proxy is constructed as
+
+\begin{equation}
+\widetilde{p}_i = \min\!\left(c_{t_i},\;u_i\rho_{g,t_i}o_g\right),
+\label{eq:res_population}
+\end{equation}
+
+where $u_i$ is the estimated number of units, $\rho_{g,t_i}$ is the CBG-specific people-per-unit ratio for type $t_i$, $o_g$ is the CBG occupancy rate, and $c_{t_i}$ is a type-specific cap. Missing CBG ratios use type-specific defaults of 2.85, 2.40, 2.50, 2.20, 2.00, 1.70, and 2.40 people per unit for single family, mobile home, duplex, triplex, small multi-family, large multi-family, and unknown residential, respectively; the default occupancy rate is 0.91. The corresponding caps are 12, 8, 20, 30, 120, 500, and 12 people.
+
+For commercial buildings, the construction applies a daytime density to footprint area,
+
+\begin{equation}
+\widetilde{p}_i = a_i d_{t_i},
+\label{eq:nonres_population}
+\end{equation}
+
+with $d_{t_i}=0.040$ people per square metre. Thus $\widetilde{p}_i$ is a reproducible exposure proxy assembled from cadastral, areal-demographic, and geometric rules; it is not a direct observation of building occupancy. The recorded construction source is used for stratified evaluation but is not required at inference.
+
+\subsection{Stage 1: Building-Instance Delineation and Asset Generation}
+\label{sec:method_stage1}
+
+Building instances are delineated from pre-event imagery so that damage does not redefine the asset boundary. SAM~3 \citep{carion2025sam3} is prompted with \emph{building}; each positive instance mask is polygonized separately and associated with its mean segmentation score. The resulting geometry, score, source image, and identifier establish the spatial anchor for all later estimates.
+
+% Evidence: II_package/src/ii_pipeline/stage1.py and II_package/docs/stage1.md, Stage1 output contract.
+% Evidence: II_package/docs/Stage2b.md, Task Definition and Sample Schema; II_package/docs/stage3.md, Shared Instance Contract.
+For each polygon, the asset generator creates aligned $256\times256$ pre- and post-event RGB crops, a target-footprint mask $M$, and a 48-pixel context-ring mask $R$. It also records crop coordinates, event and hazard metadata, footprint and ring areas, source paths, and delineation confidence. Both branches read this shared instance package but select branch-specific inputs: Stage~2a uses the pre-event crop, footprint mask, and geometry, whereas Stage~2b uses paired pre- and post-event crops with footprint and context masks. This shared representation ensures that type, exposure, and damage estimates refer to the same geometry rather than independently reconstructed versions of a building.
+
+Figure~\ref{fig:stage1_instance_illustration} illustrates the spatial object produced by Stage~1 for a packaged application cell. The delineated boundaries remain linked to the pre-event image and provide the geometry from which the shared downstream assets are generated.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{stage1_instance_illustration.pdf}
+\caption{Illustrative Stage~1 building-instance delineation for Los Angeles cell 00507. (a) Pre-event imagery used to define persistent building geometry. (b) In-frame boundaries from the current packaged Stage~1 output, with an enlarged view of individual instances. This application example shows the spatial interface passed downstream; it is not part of the xView2 benchmark used to compute the delineation metrics in Section~\ref{sec:exp_stage1}.}
+\label{fig:stage1_instance_illustration}
+\end{figure*}
+\FloatBarrier
+
+\subsection{Stage 2a: Building-Type and Exposure-Proxy Estimation}
+\label{sec:method_stage2a_model}
+
+Stage~2a separates visual building-type inference from exposure-proxy regression (Figure~\ref{fig:stage2_architecture}a). Each type classifier receives a $224\times224$ pre-event RGB crop with the footprint mask appended as a fourth channel. The same mask is downsampled to the final ConvNeXt-Tiny feature map $F_i$ and used for target-specific average pooling \citep{liu2022convnext}:
+
+\begin{equation}
+\mathbf{h}_i^{M}=
+\frac{\sum_{x,y}F_i(x,y)M_i(x,y)}
+{\max\!\left(\varepsilon,\sum_{x,y}M_i(x,y)\right)}.
+\label{eq:stage2a_mask_pool}
+\end{equation}
+
+The 768-dimensional pooled feature is projected to 512 dimensions. Four deployable geometric attributes (log footprint area, mask fill ratio, bounding-box aspect ratio, and compactness) are projected from four to 64 dimensions. Their concatenation passes through a $576\rightarrow128\rightarrow3$ head that estimates commercial, residential-multi, and residential-small probabilities. Five independently fitted classifiers produce probability vectors $\mathbf{q}_i^{(m)}$, which are averaged at inference:
+
+\begin{equation}
+\widehat{\boldsymbol{\tau}}_i=\frac{1}{5}\sum_{m=1}^{5}\mathbf{q}_i^{(m)}.
+\label{eq:stage2a_type_ensemble}
+\end{equation}
+
+% Evidence: II_package/scripts/stage2a/common.py, BuildingPopulationModel and masked pooling.
+% Evidence: II_package/models/stage2a/native3_drop_both_ensemble, five stage2a_best_model.pt checkpoints.
+The exposure model uses predicted rather than reference type. A standardized ridge model estimates a baseline $b_i$ for $\log(1+\widetilde{p}_i)$ from log footprint area. An absolute-error histogram gradient-boosting model estimates a residual $r_i$ from log footprint area, the three soft type probabilities, their maximum, probability margin, entropy, and the combined residential probability. The final estimate is
+
+\begin{equation}
+\widehat{p}_i=
+\max\!\left\{0,\exp\!\left(b_i+r_i\right)-1\right\}.
+\label{eq:stage2a_exposure_model}
+\end{equation}
+
+This staged construction preserves the area-only baseline while allowing visual building-use evidence to explain systematic residual variation. It also prevents the constructed exposure target from being presented as a direct image-derived occupancy count.
+
+The model uses footprint area supplied by the instance record. If upstream area is unavailable, the inference adapter approximates it from footprint-mask pixels as
+
+% Evidence: II_package/scripts/stage2a/infer/build_stage2a_infer_csv.py and II_package/docs/stage2a.md.
+\begin{equation}
+\widehat{a}_i = 4.641392\,A_i^{\mathrm{mask}},
+\label{eq:footprint_fallback}
+\end{equation}
+
+where $A_i^{\mathrm{mask}}$ is mask area in pixels. Confidence, margin, entropy, soft class probabilities, and ensemble variation remain attached to each prediction. The exposure estimate can therefore be reviewed together with the type evidence that informed it.
+
+\subsection{Stage 2b: Ordinal Building-Damage Estimation}
+\label{sec:method_stage2b}
+
+Damage is represented by four ordered states: no visible damage, minor damage, major damage, and destroyed. A weight-shared ConvNeXt-Tiny backbone processes the $256\times256$ pre- and post-event RGB crops (Figure~\ref{fig:stage2_architecture}b). The final feature maps are pooled separately over the footprint $M$ and context ring $R$. For region $S\in\{M,R\}$, the signed change is $\boldsymbol{\Delta}_i^S=\mathbf{h}_{i,\mathrm{post}}^S-\mathbf{h}_{i,\mathrm{pre}}^S$. The fused representation is
+
+\begin{equation}
+\mathbf{z}_i=
+\left[
+\mathbf{h}_{i,\mathrm{pre}}^M,
+\mathbf{h}_{i,\mathrm{post}}^M,
+\mathbf{h}_{i,\mathrm{pre}}^R,
+\mathbf{h}_{i,\mathrm{post}}^R,
+\boldsymbol{\Delta}_i^M,
+\boldsymbol{\Delta}_i^R,
+\lvert\boldsymbol{\Delta}_i^M\rvert,
+\lvert\boldsymbol{\Delta}_i^R\rvert
+\right].
+\label{eq:stage2b_fusion}
+\end{equation}
+
+The final ConvNeXt stage has $C=768$ channels, giving an $8C=6{,}144$ dimensional vector. A $6{,}144\rightarrow512\rightarrow3$ head with ReLU activation and dropout produces cumulative logits for the ordered targets $y>0$, $y>1$, and $y>2$. This CORAL-style formulation \citep{cao2020coral} encodes ordered thresholds through its training targets. Adjacent sigmoid differences are clamped and normalized to obtain four class probabilities.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{stage2_model_architecture.png}
+\caption{Architectures of the two learned Stage~2 branches. (a) Stage~2a combines mask-aware pre-event image features with deployable geometry to estimate three building-type probabilities. Their five-model mean informs a separately fitted ridge-plus-residual exposure model. (b) Stage~2b applies a weight-shared backbone to paired observations, pools footprint and context features, and combines state and change evidence in a cumulative ordinal head.}
+\label{fig:stage2_architecture}
+\end{figure*}
+
+% Evidence: II_package/scripts/stage2b/training/train_stage2.py, SiameseDamageModel, CoralHead, and coral_probs_from_logits.
+Inference combines three checkpoints with weights 4:3:2. Weighted raw cumulative logits determine the damage class. Temperature-scaled member probabilities provide expected severity, confidence, entropy, and between-model disagreement. These quantities remain review fields rather than being collapsed into the ordinal label.
+
+\subsection{Stage 3: Coverage-Aware Multi-Date Synthesis}
+\label{sec:method_stage3}
+
+Synthesis creates one row for every identifier present in any stage. The record includes geometry, delineation confidence, type and exposure estimates, ordinal damage, expected severity, uncertainty indicators, source paths, and stage-presence flags. The union join makes partial coverage explicit and permits analysts to filter buildings by which evidence is available.
+
+% Evidence: II_package/scripts/present_instance_results.py, merge and join-coverage logic.
+% Evidence: II_package/docs/stage3.md, M2b coverage-aware majority rule and review artifacts.
+For repeated post-event observations, a date contributes to the building-level damage estimate only when both tile quality and crop coverage are valid. The final class is the majority among valid dates, with ties resolved toward the more severe class. A building with no valid date receives class $-1$ (not identifiable), rather than class 0 (no visible damage). Temporal coverage therefore remains part of the substantive result instead of being treated as a preprocessing detail.
+
+For optional review ordering, the system computes
+
+\begin{equation}
+s_i = \widehat{p}_i\,\mathbb{E}[y_i],
+\label{eq:ranking_score}
+\end{equation}
+
+where $\widehat{p}_i$ is the exposure proxy and $\mathbb{E}[y_i]$ is expected ordinal severity. This product is used only as a heuristic ranking signal, not a calibrated impact score. The deliverables remain the full instance table, coverage summary, uncertainty queue, and spatial overlays, allowing a reviewer to recover the evidence behind any prioritized building.
